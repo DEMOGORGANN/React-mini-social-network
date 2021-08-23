@@ -12,25 +12,36 @@ export default class App extends Component {
     super(props);
     this.state = {
       data: [
-        { label: "ti lox", important: false, key: "1" },
-        { label: "ti l2ox", important: false, key: "2" },
-        { label: "ti l5x", important: false, key: "3" },
+        {
+          label: "Напиши что-нибудь...",
+          important: false,
+          like: false,
+          key: 1,
+        },
       ],
+      term: "",
+      filter: "all",
     };
     this.DeleteItem = this.DeleteItem.bind(this);
     this.addItems = this.addItems.bind(this);
-    this.maxKey = 4;
+    this.onImportant = this.onImportant.bind(this);
+    this.onLike = this.onLike.bind(this);
+    this.onUpdateSearch = this.onUpdateSearch.bind(this);
+    this.onUpdateFilter = this.onUpdateFilter.bind(this);
+
+    this.maxKey = 2;
   }
 
   DeleteItem(id) {
     this.setState(({ data }) => {
-      const index = data.findIndex((elem) => (elem.id = id));
-      const newArray = [...data.slice(1, index), ...data.slice(index + 1)];
+      const index = data.findIndex((elem) => elem.key === id);
+      const newArray = [...data.slice(0, index), ...data.slice(index + 1)];
       return {
         data: newArray,
       };
     });
   }
+
   addItems(body) {
     const newItem = {
       label: body,
@@ -45,15 +56,94 @@ export default class App extends Component {
     });
   }
 
+  onImportant(id) {
+    this.setState(({ data }) => {
+      const index = data.findIndex((elem) => elem.key === id);
+
+      const old = data[index];
+      const nwItem = { ...old, important: !old.important };
+
+      const newsArray = [
+        ...data.slice(0, index),
+        nwItem,
+        ...data.slice(index + 1),
+      ];
+      return {
+        data: newsArray,
+      };
+    });
+  }
+
+  onLike(id) {
+    this.setState(({ data }) => {
+      const index = data.findIndex((elem) => elem.key === id);
+
+      const old = data[index];
+      const nwItem = { ...old, like: !old.like };
+
+      const newsArray = [
+        ...data.slice(0, index),
+        nwItem,
+        ...data.slice(index + 1),
+      ];
+      return {
+        data: newsArray,
+      };
+    });
+  }
+
+  onSearch(items, term) {
+    if (term.length === 0) {
+      return items;
+    }
+
+    return items.filter((item) => {
+      return item.label.toLowerCase().indexOf(term.toLowerCase()) > -1;
+    });
+  }
+
+  onUpdateSearch(term) {
+    this.setState({ term });
+  }
+
+  onFilter(items, filter) {
+    if (filter === "like") {
+      return items.filter((item) => {
+        return item.like;
+      });
+    } else {
+      return items;
+    }
+  }
+
+  onUpdateFilter(filter) {
+    this.setState({ filter });
+  }
+
   render() {
+    const { data, term, filter } = this.state;
+
+    const numLikes = data.filter((item) => item.like === true).length;
+    const allPost = data.length;
+
+    const visiblePost = this.onFilter(this.onSearch(data, term), filter);
+
     return (
       <div className="app">
-        <AppHeader />
+        <AppHeader numLikes={numLikes} allPost={allPost} />
         <div className="search-panel d-flex">
-          <SearchPanel />
-          <PostStatusFilter />
+          <SearchPanel onUpdateSearch={this.onUpdateSearch} />
+          <PostStatusFilter
+            filter={filter}
+            onUpdateFilter={this.onUpdateFilter}
+          />
         </div>
-        <PostList data={this.state.data} OnDelete={this.DeleteItem} />
+        <PostList
+          data={visiblePost}
+          OnDelete={this.DeleteItem}
+          onImportant={this.onImportant}
+          onLike={this.onLike}
+        />
         <PostAddForm addItem={this.addItems} />
       </div>
     );
